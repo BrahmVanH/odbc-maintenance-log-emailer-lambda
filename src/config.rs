@@ -5,6 +5,8 @@ use std::env;
 pub struct Config {
     pub dropbox: DropboxConfig,
     pub lettre: LettreConfig,
+    pub allow_origins: String,
+    pub log_level: String,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -48,6 +50,8 @@ impl Default for Config {
                 reply_to: env::var("LETTRE_EMAIL_ADDRESS").unwrap_or_else(|_| "".to_string()),
                 from: env::var("LETTRE_EMAIL_ADDRESS").unwrap_or_else(|_| "".to_string()),
             },
+            allow_origins: "".to_string(),
+            log_level: "error".to_string(),
         }
     }
 }
