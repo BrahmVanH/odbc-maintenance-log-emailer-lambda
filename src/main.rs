@@ -7,6 +7,7 @@ use crate::config::Config;
 
 pub mod config;
 pub mod error;
+pub mod dropbox;
 
 pub use error::{ AppError, AppResult };
 

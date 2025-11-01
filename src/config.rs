@@ -38,10 +38,10 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             dropbox: DropboxConfig {
-                refresh_token: env::var("DROPBOX_REFRESH_TOKEN").unwrap_or_else(|_| "".to_string()),
-                app_key: env::var("DROPBOX_APP_KEY").unwrap_or_else(|_| "".to_string()),
-                app_secret: env::var("DROPBOX_APP_SECRET").unwrap_or_else(|_| "".to_string()),
-                shared_link: env::var("DROPBOX_SHARED_LINK").unwrap_or_else(|_| "".to_string()),
+                refresh_token: env::var("DBX_OAUTH_TOKEN").unwrap_or_else(|_| "".to_string()),
+                app_key: env::var("DBX_APP_KEY").unwrap_or_else(|_| "".to_string()),
+                app_secret: env::var("DBX_APP_SECRET").unwrap_or_else(|_| "".to_string()),
+                shared_link: env::var("DBX_SHARED_LINK").unwrap_or_else(|_| "".to_string()),
             },
             lettre: LettreConfig {
                 smtp_username: env::var("SMTP_USERNAME").unwrap_or_else(|_| "".to_string()),
