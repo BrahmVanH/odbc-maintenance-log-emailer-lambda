@@ -1,18 +1,16 @@
 use axum::{ extract::Extension, http::{ HeaderValue, Method }, Router };
+use dotenvy::dotenv;
+use opendal::Operator;
 use tower::ServiceBuilder;
 use tower_http::{ compression::CompressionLayer, cors::{ Any, CorsLayer } };
 use tracing::{ info, error };
 
-use crate::config::Config;
-
-pub mod config;
-pub mod error;
-pub mod dropbox;
-
-pub use error::{ AppError, AppResult };
+use maintenance_sheet_emailer::{ config::Config, dropbox::create_dbx_operator, handle_send_email };
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+
     tracing_subscriber
         ::fmt()
         .with_max_level(tracing::Level::INFO)
@@ -81,6 +79,21 @@ async fn main() {
 
     info!("Server running on http://localhost:{}", port);
 
+    // Create Dropbox operator before starting server
+    let dbx: Operator = create_dbx_operator(&config.dropbox).await
+    .map_err(|e| {
+        error!("error in creating dbx operator: {}", e);
+        e
+        })
+        .unwrap_or_else(|e| {
+            error!("could not create dbx operator: {:?}", e);
+            std::process::exit(1);
+        });
+
+        match handle_send_email(&dbx, &config.lettre).await {
+        Ok(_) => info!("Successfully sent email"),
+        Err(e) => error!("Did not send email: {:?}", e),
+    }
     if let Err(e) = axum::serve(listener, app).await {
         error!("Fatal error running server: {}", e);
         std::process::exit(1);

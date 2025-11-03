@@ -21,9 +21,16 @@ pub struct DropboxConfig {
 pub struct LettreConfig {
     pub smtp_username: String,
     pub smtp_password: String,
-    pub to: String,
-    pub reply_to: String,
-    pub from: String,
+    pub to: LettreAddress,
+    pub reply_to: LettreAddress,
+    pub from: LettreAddress,
+    pub subject: String,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct LettreAddress {
+    pub name: String,
+    pub email: String,
 }
 
 impl Config {
@@ -36,6 +43,7 @@ impl Config {
 
 impl Default for Config {
     fn default() -> Self {
+        let email_address = env::var("LETTRE_EMAIL_ADDRESS").unwrap_or_else(|_| "".to_string());
         Self {
             dropbox: DropboxConfig {
                 refresh_token: env::var("DBX_OAUTH_TOKEN").unwrap_or_else(|_| "".to_string()),
@@ -44,11 +52,21 @@ impl Default for Config {
                 shared_link: env::var("DBX_SHARED_LINK").unwrap_or_else(|_| "".to_string()),
             },
             lettre: LettreConfig {
-                smtp_username: env::var("SMTP_USERNAME").unwrap_or_else(|_| "".to_string()),
+                smtp_username: env::var("SMTP_ADDRESS").unwrap_or_else(|_| "".to_string()),
                 smtp_password: env::var("SMTP_PASSWORD").unwrap_or_else(|_| "".to_string()),
-                to: env::var("LETTRE_EMAIL_ADDRESS").unwrap_or_else(|_| "".to_string()),
-                reply_to: env::var("LETTRE_EMAIL_ADDRESS").unwrap_or_else(|_| "".to_string()),
-                from: env::var("LETTRE_EMAIL_ADDRESS").unwrap_or_else(|_| "".to_string()),
+                to: LettreAddress {
+                    name: "Brahm".to_string(),
+                    email: email_address.clone(),
+                },
+                reply_to: LettreAddress {
+                    name: "Brahm".to_string(),
+                    email: email_address.clone(),
+                },
+                from: LettreAddress {
+                    name: "Brahm".to_string(),
+                    email: email_address.clone(),
+                },
+                subject: "Maintenance Tasks".to_string(),
             },
             allow_origins: "".to_string(),
             log_level: "error".to_string(),

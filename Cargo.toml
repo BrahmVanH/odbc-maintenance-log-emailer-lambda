@@ -1,12 +1,17 @@
 [package]
-name = "maintenance-sheet-emailer-rust"
+name = "maintenance_sheet_emailer"
 version = "0.1.0"
 edition = "2024"
 
 [dependencies]
 axum = "0.8.6"
+calamine = "0.31.0"
+chrono = { version = "0.4.42", features = ["serde"] }
+chrono-humanize = "0.2.3"
+dotenvy = "0.15.7"
 dropbox-sdk = {version  = "0.19.1", features = ["default_client"]}
 envy = "0.4.2"
+lettre = { version = "0.11.19", features = ["smtp-transport"] }
 opendal = { version = "0.54.1", features = ["services-dropbox"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
