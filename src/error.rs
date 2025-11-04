@@ -1,3 +1,6 @@
+use std::env;
+
+use sentry::ClientInitGuard;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -19,6 +22,18 @@ pub enum AppError {
     #[error("Authentication error: {0}")] AuthError(String),
 }
 
-
-
 pub type AppResult<T> = Result<T, AppError>;
+
+pub fn initiate_sentry() -> ClientInitGuard {
+    let dsn = env::var("SENTRY_DSN").unwrap_or_else(|_| "".to_string());
+    sentry::init((
+        dsn,
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            // Capture user IPs and potentially sensitive headers when using HTTP server integrations
+            // see https://docs.sentry.io/platforms/rust/data-management/data-collected for more info
+            send_default_pii: true,
+            ..Default::default()
+        },
+    ))
+}

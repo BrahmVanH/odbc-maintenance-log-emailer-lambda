@@ -1,13 +1,16 @@
-use std::{ fmt::format, io::Cursor };
-
-use calamine::{ open_workbook_auto_from_rs, Data, Reader, Rows };
-use chrono::{ DateTime, Duration, NaiveDate, NaiveDateTime, TimeDelta, Utc };
+use std::io::Cursor;
+use chrono::{ DateTime, Utc };
 use tracing::info;
 
+use calamine::{ open_workbook_auto_from_rs, Data, Reader };
+
 use crate::{
-    mailer::email_body::{ format_basic_date, get_time_difference_from_now },
+    mailer::email_body::get_time_difference_from_now,
     models::MaintenanceTask,
     AppError,
+    NaiveDate,
+    Duration,
+    TimeDelta,
 };
 
 pub fn parse_xlsx_file(xlsx_buffer: Vec<u8>) -> Result<Vec<Vec<Data>>, AppError> {
@@ -30,7 +33,7 @@ pub fn parse_xlsx_file(xlsx_buffer: Vec<u8>) -> Result<Vec<Vec<Data>>, AppError>
     Ok(rows)
 }
 
-pub fn convert_excel_date_to_datetime(excel_serial_number: f64) -> Option<NaiveDateTime> {
+pub fn convert_excel_date_to_datetime(excel_serial_number: f64) -> Option<DateTime<Utc>> {
     let excel_epoch = NaiveDate::from_ymd_opt(1900, 1, 1)?;
 
     let adjusted_serial_number = if excel_serial_number > 60.0 {
@@ -47,7 +50,7 @@ pub fn convert_excel_date_to_datetime(excel_serial_number: f64) -> Option<NaiveD
 
     let datetime = excel_epoch.and_hms_opt(0, 0, 0)? + duration_days + duration_seconds;
 
-    Some(datetime)
+    Some(DateTime::<Utc>::from_naive_utc_and_offset(datetime, Utc))
 }
 
 pub fn extract_maintenance_tasks(task_rows: Vec<Vec<Data>>) -> Vec<MaintenanceTask> {
@@ -69,49 +72,39 @@ pub fn extract_maintenance_tasks(task_rows: Vec<Vec<Data>>) -> Vec<MaintenanceTa
     tasks
 }
 
-pub fn get_next_weeks_tasks(
-    tasks: &Vec<MaintenanceTask>
-) -> Result<Vec<MaintenanceTask>, AppError> {
+pub fn get_next_weeks_tasks(tasks: &Vec<MaintenanceTask>) -> Vec<MaintenanceTask> {
     tasks
         .iter()
         .filter(|t| {
-            info!("task: {:?}", &t);
+            if let Some(completed_by) = &t.completed_by {
+                let delta = get_time_difference_from_now(&completed_by);
+                info!("delta: {:?}", delta);
 
-            let delta = get_time_difference_from_now(&t.last_completed);
-            delta < TimeDelta::weeks(1)
-        })
-        .map(
-            |t| -> Result<MaintenanceTask, AppError> {
-                Ok(MaintenanceTask {
-                    last_completed: format_basic_date(&t.last_completed),
-                    completed_by: format_basic_date(&t.completed_by),
-                    ..t.clone()
-                })
-            }
-        )
-        .collect()
-}
-
-pub fn get_next_months_tasks(
-    tasks: &Vec<MaintenanceTask>
-) -> Result<Vec<MaintenanceTask>, AppError> {
-    tasks
-        .iter()
-        .filter(|t| {
-            if let Ok(datetime) = t.completed_by.parse::<DateTime<Utc>>() {
-                get_time_difference_from_now(datetime) < TimeDelta::weeks(4)
+                delta < TimeDelta::weeks(1)
             } else {
                 false
             }
         })
-        .map(
-            |t| -> Result<MaintenanceTask, AppError> {
-                Ok(MaintenanceTask {
-                    last_completed: format_basic_date(&t.last_completed).map_err(|e| e)?,
-                    completed_by: format_basic_date(&t.completed_by).map_err(|e| e)?,
-                    ..t.clone()
-                })
+        .cloned()
+        .collect()
+}
+
+pub fn get_next_months_tasks(tasks: &Vec<MaintenanceTask>) -> Vec<MaintenanceTask> {
+    tasks
+        .iter()
+        .filter(|t| {
+            if let Some(completed_by) = &t.completed_by {
+                let delta = get_time_difference_from_now(&completed_by);
+
+                info!("true");
+
+                delta < TimeDelta::weeks(4)
+            } else {
+                info!("false");
+
+                false
             }
-        )
+        })
+        .cloned()
         .collect()
 }

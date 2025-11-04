@@ -3,11 +3,14 @@ pub mod error;
 pub mod models;
 pub mod dropbox;
 pub mod mailer;
+pub mod job_scheduler;
 
+use sentry::capture_error;
+use tokio_cron_scheduler::{ Job, JobScheduler, JobSchedulerError };
 pub use error::{ AppError, AppResult };
-use opendal::Operator;
+pub use chrono::{ Duration, NaiveDate, NaiveDateTime, TimeDelta };
 
-use tracing::info;
+use opendal::Operator;
 
 use crate::{
     config::LettreConfig,
@@ -33,15 +36,12 @@ pub async fn handle_send_email(
 
     let maintenance_tasks = extract_maintenance_tasks(rows);
 
-
-    let next_weeks_tasks = get_next_weeks_tasks(&maintenance_tasks)?;
-    let next_months_tasks = get_next_months_tasks(&maintenance_tasks)?;
-    info!("next_weeks_tasks: {:?} ", next_weeks_tasks);
-    info!("next_months_tasks: {:?} ", next_months_tasks);
+    let next_weeks_tasks = get_next_weeks_tasks(&maintenance_tasks);
+    let next_months_tasks = get_next_months_tasks(&maintenance_tasks);
 
     let email_body = format_email_text(next_weeks_tasks, next_months_tasks);
 
-    // send_email(&email_body, lettre_config)?;
+    send_email(&email_body, lettre_config)?;
 
     Ok(())
 }

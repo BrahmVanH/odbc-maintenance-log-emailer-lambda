@@ -1,3 +1,5 @@
+use std::env;
+
 use axum::{ extract::Extension, http::{ HeaderValue, Method }, Router };
 use dotenvy::dotenv;
 use opendal::Operator;
@@ -5,11 +7,26 @@ use tower::ServiceBuilder;
 use tower_http::{ compression::CompressionLayer, cors::{ Any, CorsLayer } };
 use tracing::{ info, error };
 
-use maintenance_sheet_emailer::{ config::Config, dropbox::create_dbx_operator, handle_send_email };
+use maintenance_sheet_emailer::{
+    config::Config,
+    dropbox::create_dbx_operator,
+    job_scheduler::init_job_scheduler,
+};
 
 #[tokio::main]
 async fn main() {
     dotenv().ok();
+
+    let dsn = env::var("SENTRY_DSN").unwrap_or_else(|_| "".to_string());
+
+    let _guard = sentry::init((
+        dsn,
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            send_default_pii: true,
+            ..Default::default()
+        },
+    ));
 
     tracing_subscriber
         ::fmt()
@@ -51,7 +68,7 @@ async fn main() {
         cors_layer = cors_layer.allow_origin(header_value);
     }
 
-    let mut router = Router::new();
+    let router = Router::new();
 
     // Add middleware layers
     let app = router.layer(
@@ -81,19 +98,25 @@ async fn main() {
 
     // Create Dropbox operator before starting server
     let dbx: Operator = create_dbx_operator(&config.dropbox).await
-    .map_err(|e| {
-        error!("error in creating dbx operator: {}", e);
-        e
+        .map_err(|e| {
+            error!("error in creating dbx operator: {}", e);
+            e
         })
         .unwrap_or_else(|e| {
             error!("could not create dbx operator: {:?}", e);
             std::process::exit(1);
         });
 
-        match handle_send_email(&dbx, &config.lettre).await {
-        Ok(_) => info!("Successfully sent email"),
-        Err(e) => error!("Did not send email: {:?}", e),
+    if let Ok(sched) = init_job_scheduler(&dbx, &config.lettre).await {
+        if let Err(e) = sched.start().await {
+            error!("Failed to start job scheduler: {:?}", e);
+            std::process::exit(1);
+        }
+    } else {
+        error!("could not initiate job scheduler");
+        std::process::exit(1);
     }
+
     if let Err(e) = axum::serve(listener, app).await {
         error!("Fatal error running server: {}", e);
         std::process::exit(1);
