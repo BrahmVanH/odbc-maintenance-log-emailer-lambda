@@ -78,7 +78,7 @@ async fn main() {
             .layer(cors_layer)
     );
 
-    let port = std::env
+    let port = env
         ::var("PORT")
         .unwrap_or_else(|_| "3000".to_string())
         .parse::<u16>()
