@@ -18,7 +18,6 @@ async fn main() {
     dotenv().ok();
 
     let dsn = env::var("SENTRY_DSN").unwrap_or_else(|_| "".to_string());
-
     let _guard = sentry::init((
         dsn,
         sentry::ClientOptions {
