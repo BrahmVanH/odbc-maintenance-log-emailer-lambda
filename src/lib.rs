@@ -5,8 +5,6 @@ pub mod dropbox;
 pub mod mailer;
 pub mod job_scheduler;
 
-use sentry::capture_error;
-use tokio_cron_scheduler::{ Job, JobScheduler, JobSchedulerError };
 pub use error::{ AppError, AppResult };
 pub use chrono::{ Duration, NaiveDate, NaiveDateTime, TimeDelta };
 
