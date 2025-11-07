@@ -3,7 +3,6 @@ pub mod error;
 pub mod models;
 pub mod dropbox;
 pub mod mailer;
-pub mod job_scheduler;
 
 pub use error::{ AppError, AppResult };
 pub use chrono::{ Duration, NaiveDate, NaiveDateTime, TimeDelta };
@@ -18,7 +17,7 @@ use crate::{
             extract_maintenance_tasks,
             get_next_months_tasks,
             get_next_weeks_tasks,
-            parse_xlsx_file,
+            parse_xlsx_file_async,
         },
     },
     mailer::{ email_body::format_email_text, send_email },
@@ -30,7 +29,7 @@ pub async fn handle_send_email(
 ) -> Result<(), AppError> {
     let xlsx_buffer = get_xlsx_from_dbx(dbx).await?;
 
-    let rows = parse_xlsx_file(xlsx_buffer)?;
+    let rows = parse_xlsx_file_async(xlsx_buffer)?;
 
     let maintenance_tasks = extract_maintenance_tasks(rows);
 

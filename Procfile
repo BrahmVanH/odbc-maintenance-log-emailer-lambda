@@ -1,1 +1,0 @@
-web: ./target/release/maintenance_sheet_emailer

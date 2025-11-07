@@ -1,5 +1,6 @@
 use std::io::Cursor;
 use chrono::{ DateTime, Utc };
+use tokio::task;
 use tracing::info;
 
 use calamine::{ open_workbook_auto_from_rs, Data, Reader };
@@ -29,6 +30,33 @@ pub fn parse_xlsx_file(xlsx_buffer: Vec<u8>) -> Result<Vec<Vec<Data>>, AppError>
     for row in range.rows() {
         rows.push(row.to_vec());
     }
+
+    Ok(rows)
+}
+
+pub async fn parse_xlsx_file_async(xlsx_buffer: Vec<u8>) -> Result<Vec<Vec<Data>>, AppError> {
+    let rows = task
+        ::spawn_blocking(move || {
+            let cursor = Cursor::new(xlsx_buffer);
+
+            let mut workbook = open_workbook_auto_from_rs(cursor).map_err(|e|
+                AppError::InternalServerError(format!("Could not parse xlsx file: {}", e))
+            )?;
+
+            let range = workbook
+                .worksheet_range("Maintenance Log")
+                .map_err(|e|
+                    AppError::InternalServerError(format!("Could not access workbook range: {}", e))
+                )?;
+
+            let mut rows: Vec<Vec<Data>> = Vec::new();
+            for row in range.rows() {
+                rows.push(row.to_vec());
+            }
+
+            Ok::<Vec<Vec<Data>>, AppError>(rows)
+        }).await
+        .map_err(|e| AppError::InternalServerError(format!("Task join error: {}", e)))??;
 
     Ok(rows)
 }
