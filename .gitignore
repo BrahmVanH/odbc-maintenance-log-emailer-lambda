@@ -4,3 +4,6 @@
 .aws-sam
 samconfig.toml
 template.yaml
+
+response.json
+src/ssm.rs

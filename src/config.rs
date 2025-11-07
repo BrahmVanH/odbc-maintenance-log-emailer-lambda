@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use std::env;
+use std::{ env, collections::HashMap };
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Config {
@@ -38,6 +38,54 @@ impl Config {
         envy::from_env().map_err(|e| {
             crate::AppError::ConfigError(format!("Failed to load config from environment: {}", e))
         })
+    }
+
+    /// Safe way to create config with SSM parameters
+    pub fn from_env_and_ssm(ssm_params: HashMap<String, String>) -> Self {
+        let email_address = env::var("LETTRE_EMAIL_ADDRESS").unwrap_or_else(|_| "".to_string());
+
+        Self {
+            dropbox: DropboxConfig {
+                refresh_token: ssm_params
+                    .get("DBX_OAUTH_TOKEN")
+                    .cloned()
+                    .unwrap_or_else(||
+                        env::var("DBX_OAUTH_TOKEN").unwrap_or_else(|_| "".to_string())
+                    ),
+                app_key: env::var("DBX_APP_KEY").unwrap_or_else(|_| "".to_string()),
+                app_secret: ssm_params
+                    .get("DBX_APP_SECRET")
+                    .cloned()
+                    .unwrap_or_else(||
+                        env::var("DBX_APP_SECRET").unwrap_or_else(|_| "".to_string())
+                    ),
+                shared_link: env::var("DBX_SHARED_LINK").unwrap_or_else(|_| "".to_string()),
+            },
+            lettre: LettreConfig {
+                smtp_username: env::var("SMTP_ADDRESS").unwrap_or_else(|_| "".to_string()),
+                smtp_password: ssm_params
+                    .get("SMTP_PASSWORD")
+                    .cloned()
+                    .unwrap_or_else(||
+                        env::var("SMTP_PASSWORD").unwrap_or_else(|_| "".to_string())
+                    ),
+                to: LettreAddress {
+                    name: "Brahm".to_string(),
+                    email: email_address.clone(),
+                },
+                reply_to: LettreAddress {
+                    name: "Brahm".to_string(),
+                    email: email_address.clone(),
+                },
+                from: LettreAddress {
+                    name: "Brahm".to_string(),
+                    email: email_address.clone(),
+                },
+                subject: "Maintenance Tasks".to_string(),
+            },
+            allow_origins: "".to_string(),
+            log_level: "error".to_string(),
+        }
     }
 }
 

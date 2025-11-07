@@ -3,6 +3,7 @@ pub mod error;
 pub mod models;
 pub mod dropbox;
 pub mod mailer;
+pub mod ssm;
 
 pub use error::{ AppError, AppResult };
 pub use chrono::{ Duration, NaiveDate, NaiveDateTime, TimeDelta };
@@ -29,7 +30,7 @@ pub async fn handle_send_email(
 ) -> Result<(), AppError> {
     let xlsx_buffer = get_xlsx_from_dbx(dbx).await?;
 
-    let rows = parse_xlsx_file_async(xlsx_buffer)?;
+    let rows = parse_xlsx_file_async(xlsx_buffer).await?;
 
     let maintenance_tasks = extract_maintenance_tasks(rows);
 
