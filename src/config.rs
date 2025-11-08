@@ -34,11 +34,6 @@ pub struct LettreAddress {
 }
 
 impl Config {
-    pub fn from_env() -> Result<Self, crate::AppError> {
-        envy::from_env().map_err(|e| {
-            crate::AppError::ConfigError(format!("Failed to load config from environment: {}", e))
-        })
-    }
 
     /// Safe way to create config with SSM parameters
     pub fn from_env_and_ssm(ssm_params: HashMap<String, String>) -> Self {
@@ -81,7 +76,7 @@ impl Config {
                     name: "Brahm".to_string(),
                     email: email_address.clone(),
                 },
-                subject: "Maintenance Tasks".to_string(),
+                subject: "Maintenance Tasks - Lambda".to_string(),
             },
             allow_origins: "".to_string(),
             log_level: "error".to_string(),

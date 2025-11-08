@@ -1,8 +1,5 @@
-use std::env;
-
 use lambda_runtime::{ service_fn, Error, LambdaEvent };
 use serde_json::Value;
-use dotenvy::dotenv;
 use tracing::info;
 use maintenance_sheet_emailer::{
     config::Config,
@@ -12,25 +9,8 @@ use maintenance_sheet_emailer::{
 };
 
 async fn function_handler(_event: LambdaEvent<Value>) -> Result<Value, Error> {
-    dotenv().ok();
-
     info!("Fetching SSM parameters...");
     let ssm_params = get_ssm_parameters().await.map_err(|e| format!("SSM error: {}", e))?;
-
-    // Initialize Sentry with DSN from SSM parameters
-    let dsn = ssm_params
-        .get("SENTRY_DSN")
-        .cloned()
-        .unwrap_or_else(|| env::var("SENTRY_DSN").unwrap_or_else(|_| "".to_string()));
-
-    let _guard = sentry::init((
-        dsn,
-        sentry::ClientOptions {
-            release: sentry::release_name!(),
-            send_default_pii: true,
-            ..Default::default()
-        },
-    ));
 
     info!("starting up...");
 

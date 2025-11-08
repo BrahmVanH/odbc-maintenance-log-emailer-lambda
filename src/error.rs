@@ -1,6 +1,6 @@
 use std::env;
 
-use sentry::ClientInitGuard;
+// use sentry::ClientInitGuard;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -24,14 +24,14 @@ pub enum AppError {
 
 pub type AppResult<T> = Result<T, AppError>;
 
-pub fn initiate_sentry() -> ClientInitGuard {
-    let dsn = env::var("SENTRY_DSN").unwrap_or_else(|_| "".to_string());
-    sentry::init((
-        dsn,
-        sentry::ClientOptions {
-            release: sentry::release_name!(),
-            send_default_pii: true,
-            ..Default::default()
-        },
-    ))
-}
+// pub fn initiate_sentry() -> ClientInitGuard {
+//     let dsn = env::var("SENTRY_DSN").unwrap_or_else(|_| "".to_string());
+//     sentry::init((
+//         dsn,
+//         sentry::ClientOptions {
+//             release: sentry::release_name!(),
+//             send_default_pii: true,
+//             ..Default::default()
+//         },
+//     ))
+// }
